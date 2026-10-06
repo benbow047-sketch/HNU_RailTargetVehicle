@@ -1,0 +1,18 @@
+{
+  "name": "target-car-controller",
+  "version": "0.1.0",
+  "private": true,
+  "description": "轨道靶车蓝牙串口测试上位机",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check main.js && node --check preload.js && node --check protocol.js",
+    "test": "node protocol.test.js"
+  },
+  "dependencies": {
+    "serialport": "^12.0.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}

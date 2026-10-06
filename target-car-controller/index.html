@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>轨道靶车控制</title>
+  <style>
+    :root{--b:#316df6;--s:#edf3ff;--r:#f04452;--g:#14a573;--t:#162033;--m:#8998aa;--l:#e7edf4}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f4f7fb;color:var(--t);font-family:"Microsoft YaHei",sans-serif}.app{width:min(460px,calc(100vw - 24px));background:#fff;border:1px solid var(--l);border-radius:24px;padding:22px;box-shadow:0 18px 60px #20395a1a}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}h1{font-size:20px;margin:0}header p{font-size:12px;color:var(--m);margin:4px 0}.online{font-size:12px;color:#8b98aa;background:#f0f3f7;border-radius:18px;padding:7px 11px}.online.connected{color:var(--g);background:#e9faf4}.car{height:64px;border-radius:14px;background:#f1f6ff;display:grid;place-items:center;position:relative;overflow:hidden}.rail{position:absolute;left:22px;right:22px;bottom:15px;height:3px;background:#b8c8dc;box-shadow:0 9px #b8c8dc}.vehicle{width:58px;height:28px;border-radius:6px;background:var(--b);z-index:2;transition:.12s;box-shadow:0 6px 14px #316df644}.label{font-size:12px;color:#697a8e;margin:13px 0 6px}.joy-wrap{display:grid;place-items:center}.joy{width:190px;height:190px;border-radius:50%;position:relative;touch-action:none;cursor:grab;background:radial-gradient(circle,#f9fbff 0 34%,#eef4ff 35% 58%,#e4edfb 59%);box-shadow:inset 0 0 0 1px #d5e2f4,inset 0 8px 22px #7088a51f;transition:opacity .18s}.joy:before,.joy:after{content:"";position:absolute;background:#c7d6e9}.joy:before{width:1px;top:17px;bottom:17px;left:50%}.joy:after{height:1px;left:17px;right:17px;top:50%}.joy.disabled{opacity:.38;cursor:not-allowed}.arrow{position:absolute;color:#87a0bd;font-size:18px;font-weight:700}.up{top:9px;left:50%;transform:translateX(-50%)}.down{bottom:9px;left:50%;transform:translateX(-50%)}.left{left:13px;top:50%;transform:translateY(-50%)}.right{right:13px;top:50%;transform:translateY(-50%)}.knob{position:absolute;width:70px;height:70px;left:60px;top:60px;border-radius:50%;background:linear-gradient(145deg,#4d85ff,#2460e6);box-shadow:0 9px 20px #1e54c959;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:700;z-index:3}.read,.status-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.data{background:#f7f9fc;border:1px solid var(--l);border-radius:11px;padding:8px 10px}.data small{display:block;color:var(--m);font-size:9px}.data b{display:block;color:var(--b);font-size:13px;margin-top:3px}.actions{display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:9px}.stop,.clear{height:41px;border:0;border-radius:11px;font-weight:700;cursor:pointer}.stop{background:#fff0f1;color:var(--r)}.clear{background:#eef7f3;color:var(--g)}.mode{margin-top:13px;padding-top:12px;border-top:1px solid var(--l)}.mode> b,.status> b{font-size:13px}.modes{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}.mode-btn{height:38px;border:1px solid #dfe7f1;border-radius:10px;background:#f8fafc;color:#617188;font-size:11px;cursor:pointer}.mode-btn.active{border-color:var(--b);background:var(--s);color:var(--b);font-weight:700}.status{margin-top:12px;padding-top:11px;border-top:1px solid var(--l)}.status-grid{grid-template-columns:repeat(3,1fr)}.status-grid .data b{font-size:11px;overflow-wrap:anywhere}.log{font-family:Consolas,monospace;font-size:10px;color:#60738a;margin-top:7px;max-height:45px;overflow:auto;background:#f7f9fc;border-radius:8px;padding:6px}.footer{margin-top:14px;padding-top:12px;border-top:1px solid var(--l)}.hint{text-align:center;color:var(--m);font-size:11px;margin:0 0 9px;min-height:16px}.connect-bar{display:flex;gap:8px;align-items:center}.port-select{flex:1;min-width:0;height:42px;padding:0 32px 0 12px;font-size:12px;color:#3e5168;background:#fff;border:1px solid #dfe7f1;border-radius:10px;outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238998aa' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center}.port-select:focus{border-color:var(--b);box-shadow:0 0 0 3px #316df616}.connect-btn{height:42px;min-width:76px;padding:0 17px;font-weight:700;color:#fff;background:var(--b);border:0;border-radius:10px;cursor:pointer;transition:.15s}.connect-btn:hover:not(:disabled){background:#245cdf}.connect-btn:active:not(:disabled){transform:scale(.96)}.connect-btn.disconnect{background:var(--r)}.connect-btn.disconnect:hover:not(:disabled){background:#d93746}.refresh-btn{width:42px;height:42px;display:grid;place-items:center;font-size:19px;color:#60738a;background:#fff;border:1px solid #dfe7f1;border-radius:10px;cursor:pointer;transition:.15s}.refresh-btn:hover:not(:disabled){color:var(--b);border-color:var(--b);background:#f7faff}.refresh-btn:active:not(:disabled){transform:rotate(90deg)}.connect-btn:disabled,.refresh-btn:disabled,.port-select:disabled{opacity:.45;cursor:not-allowed}
+    .actions{grid-template-columns:1fr}
+    .mode-btn:disabled{opacity:.45;cursor:not-allowed}
+    .speed-settings{margin-top:12px;padding-top:11px;border-top:1px solid var(--l)}.speed-settings>b{font-size:13px}.speed-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.speed-field{display:grid;gap:4px;color:var(--m);font-size:10px}.speed-field input{width:100%;height:38px;padding:0 10px;border:1px solid #dfe7f1;border-radius:9px;color:#31445d;background:#fff;outline:none}.speed-field input:focus{border-color:var(--b);box-shadow:0 0 0 3px #316df616}.apply-speed{width:100%;height:38px;margin-top:8px;border:0;border-radius:9px;background:var(--s);color:var(--b);font-weight:700;cursor:pointer}.apply-speed:disabled,.speed-field input:disabled{opacity:.45;cursor:not-allowed}
+    .speed-toggle{width:100%;display:flex;justify-content:space-between;align-items:center;padding:0;border:0;background:transparent;color:var(--t);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}.speed-toggle span:last-child{font-size:10px;color:var(--m)}.speed-body[hidden]{display:none}.speed-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.speed-actions .apply-speed{margin-top:0}.unlock-speed{height:38px;border:1px solid #dfe7f1;border-radius:9px;background:#fff;color:#60738a;font-weight:700;cursor:pointer}.unlock-speed:disabled{opacity:.45;cursor:not-allowed}.speed-note{margin:7px 0 0;color:var(--m);font-size:9px;text-align:center}
+    .mapping-head{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:11px;color:var(--m)}.mapping-head span{color:var(--b);font-weight:700}.mapping-range{width:100%;margin:14px 0 5px;accent-color:var(--b);cursor:pointer}.mapping-range:disabled{opacity:.45;cursor:not-allowed}.mapping-scale,.mapping-preview{display:flex;justify-content:space-between;color:var(--m);font-size:10px}.mapping-preview{margin:10px 0 0;color:#60738a}
+    .motor-status>.status-toggle{display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;outline:none}.motor-status>.status-toggle:focus-visible{color:var(--b)}.status-toggle-state{font-size:10px;color:var(--m);font-weight:400}.motor-status>.status-grid{display:none}.motor-status>.status-grid.expanded{display:grid}
+    .app{display:flex;flex-direction:column}.footer{order:99}
+  </style>
+</head>
+<body>
+<main class="app">
+  <header><div><h1>轨道靶车控制</h1><p>目标车 TC-01 · 双霍尔端点版</p></div><span class="online" id="online">设备离线</span></header>
+  <div class="car"><div class="rail"></div><div class="vehicle" id="vehicle"></div></div>
+  <p class="label">比例运动摇杆</p>
+  <div class="joy-wrap"><div class="joy disabled" id="joy"><span class="arrow up">↶</span><span class="arrow down">↷</span><span class="arrow left">←</span><span class="arrow right">→</span><div class="knob" id="knob">拖动</div></div></div>
+  <div class="read"><div class="data"><small>发送平移变量</small><b id="move">0 / 1000</b></div><div class="data"><small>发送旋转变量</small><b id="rotate">0 / 1000</b></div></div>
+  <div class="actions"><button class="stop" id="stop">■　立即急停</button></div>
+  <section class="mode"><b>工作模式</b><div class="modes"><button class="mode-btn active" data-mode="1">遥控模式</button><button class="mode-btn" data-mode="2">自动旋转靶</button><button class="mode-btn" data-mode="3">自动平移靶</button><button class="mode-btn" data-mode="4">自动旋转平移靶</button></div></section>
+  <section class="speed-settings"><button class="speed-toggle" id="speedToggle"><span>自动模式速度</span><span id="speedLockState">已锁定　▾</span></button><div class="speed-body" id="speedBody" hidden><div class="speed-grid"><label class="speed-field">平移 M3508（200～2000 rpm）<input id="autoTrackRpm" type="number" min="200" max="2000" step="50" value="1500" disabled></label><label class="speed-field">旋转 GM6020（50～400 rpm）<input id="autoArmorRpm" type="number" min="50" max="400" step="10" value="200" disabled></label></div><div class="speed-actions"><button class="unlock-speed" id="unlockAutoSpeed">解锁设置</button><button class="apply-speed" id="applyAutoSpeed" disabled>应用并锁定</button></div><p class="speed-note" id="speedNote">仅停止/遥控模式且两个电机接近停止时可解锁</p></div></section>
+  <section class="speed-settings">
+    <button class="speed-toggle" id="mappingToggle" aria-expanded="false" aria-controls="mappingBody"><span>遥控摇杆映射</span><span id="mappingLockState">已锁定　▾</span></button>
+    <div class="speed-body" id="mappingBody" hidden>
+      <div class="mapping-head"><b>左右平移 M3508（满幅）</b><span id="mappingValue">1500 rpm</span></div>
+      <input class="mapping-range" id="remoteMapping" type="range" min="200" max="2000" step="50" value="1500" aria-label="左右平移映射值" disabled>
+      <div class="mapping-scale"><span>200 rpm</span><span>2000 rpm</span></div>
+      <p class="mapping-preview" id="mappingPreview">平移摇杆 50% → 618 rpm</p>
+      <div class="mapping-head"><b>上下旋转 GM6020（满幅）</b><span id="armorMappingValue">200 rpm</span></div>
+      <input class="mapping-range" id="remoteArmorMapping" type="range" min="20" max="400" step="10" value="200" aria-label="上下旋转映射值" disabled>
+      <div class="mapping-scale"><span>20 rpm</span><span>400 rpm</span></div>
+      <p class="mapping-preview" id="armorMappingPreview">旋转摇杆 50% → 34 rpm</p>
+      <div class="speed-actions"><button class="unlock-speed" id="unlockMapping">解锁设置</button><button class="apply-speed" id="applyMapping" disabled>应用并锁定</button></div>
+      <p class="speed-note" id="mappingNote">连接支持双轴映射设置的下位机后可解锁</p>
+    </div>
+  </section>
+  <footer class="footer"><p class="hint" id="hint">先连接蓝牙虚拟串口，再测试按钮与摇杆</p><div class="connect-bar"><select id="ports" class="port-select"><option value="">选择蓝牙串口</option></select><button id="connect" class="connect-btn">连接</button><button id="refresh" class="refresh-btn" title="刷新串口">↻</button></div></footer>
+  <section class="status motor-status"><b>霍尔端点与电机实时状态</b><div class="status-grid"><div class="data"><small>安全状态</small><b id="safetyState">--</b></div><div class="data"><small>蓝牙串口通信</small><b id="btCommState">未连接</b></div><div class="data"><small>左霍尔原始输入</small><b id="leftDistance">--</b></div><div class="data"><small>右霍尔原始输入</small><b id="rightDistance">--</b></div><div class="data"><small>左端点确认</small><b id="leftEndpoint">--</b></div><div class="data"><small>右端点确认</small><b id="rightEndpoint">--</b></div><div class="data"><small>自动方向</small><b id="autoDirection">--</b></div><div class="data"><small>M3508目标转速</small><b id="trackTarget">0 rpm</b></div><div class="data"><small>M3508实际转速</small><b id="trackActual">0 rpm</b></div><div class="data"><small>M3508 ECD</small><b id="trackEcd">0</b></div><div class="data"><small>M3508反馈电流<br>编码范围 -32768～32767</small><b id="trackCurrent">--</b></div><div class="data"><small>GM6020目标转速</small><b id="armorTarget">0 rpm</b></div><div class="data"><small>GM6020实际转速</small><b id="armorActual">0 rpm</b></div><div class="data"><small>GM6020反馈电流<br>编码范围 -32768～32767</small><b id="armorCurrent">--</b></div><div class="data"><small>GM6020 ECD</small><b id="armorEcd">0</b></div></div><p class="speed-note">反馈编码值并非安培数或安全工作限值</p></section>
+</main>
+<script>
+  const $ = (s) => document.querySelector(s);
+  const ports = $('#ports'), connectBtn = $('#connect'), online = $('#online'), hint = $('#hint');
+  const joy = $('#joy'), knob = $('#knob'), vehicle = $('#vehicle');
+  const moveText = $('#move'), rotateText = $('#rotate'), log = $('#log');
+  const MODE_NAMES = ['停止', '遥控', '自动旋转', '自动平移', '自动组合'];
+  const MODE_HINTS = [
+    '两个电机停止',
+    '左右控制平移，上下控制旋转',
+    'GM6020按设定转速持续旋转',
+    '双霍尔端点控制：检测到磁铁后停车并反向',
+    '双霍尔控制平移往返，同时GM6020按设定转速旋转'
+  ];
+  let connected = false, dragging = false, currentMode = 1, pendingRemote = null, remoteTimer = null;
+  let lastDeviceFrameAt = 0;
+  let lastStatusFrameAt = 0;
+  let emergencyActive = false, deviceMode = 0;
+  let lastTrackActualRpm = 0, lastArmorActualRpm = 0;
+  let motorFeedbackReady = false;
+  let speedUnlocked = false, speedUnlockTimer = null;
+  let mappingUnlocked = false, mappingUnlockTimer = null, mappingAckTimer = null;
+  let remoteMappingSupported = false, mappingPending = false, mappingStatusMessage = '';
+  let currentMove = 0, currentRotate = 0;
+  const MAX = 60, DEAD = 0.12;
+
+  function addLog(text) {
+    if (!log) return;
+    const time = new Date().toLocaleTimeString();
+    log.textContent = `${time} ${text}\n${log.textContent}`.slice(0, 1200);
+  }
+
+  function setBluetoothComm(text, color) {
+    const element = $('#btCommState');
+    element.textContent = text;
+    element.style.color = color;
+  }
+
+  function speedConfigurationSafe() {
+    return connected && !emergencyActive && motorFeedbackReady &&
+      Date.now() - lastStatusFrameAt <= 1000 &&
+      (deviceMode === 0 || deviceMode === 1) &&
+      Math.abs(lastTrackActualRpm) <= 50 && Math.abs(lastArmorActualRpm) <= 20;
+  }
+
+  function updateSpeedControls() {
+    const safe = speedConfigurationSafe();
+    if (!safe && speedUnlocked) {
+      speedUnlocked = false;
+      if (speedUnlockTimer) clearTimeout(speedUnlockTimer);
+      speedUnlockTimer = null;
+    }
+    $('#autoTrackRpm').disabled = !speedUnlocked;
+    $('#autoArmorRpm').disabled = !speedUnlocked;
+    $('#applyAutoSpeed').disabled = !speedUnlocked;
+    $('#unlockAutoSpeed').disabled = !safe || speedUnlocked;
+    $('#speedLockState').textContent = speedUnlocked ? '已解锁　▴' : '已锁定　▾';
+    $('#speedNote').textContent = speedUnlocked ? '设置将在15秒后自动锁定' :
+      (safe ? '电机已接近停止，可以解锁设置' : '需两个电机在线，并在停止/遥控模式下接近停止');
+  }
+
+  function lockSpeedSettings(collapse = false) {
+    speedUnlocked = false;
+    if (speedUnlockTimer) clearTimeout(speedUnlockTimer);
+    speedUnlockTimer = null;
+    if (collapse) $('#speedBody').hidden = true;
+    updateSpeedControls();
+  }
+
+  function mappingConfigurationSafe() {
+    return speedConfigurationSafe() && remoteMappingSupported && !mappingPending &&
+      !dragging &&
+      currentMove === 0 && currentRotate === 0;
+  }
+
+  function updateMappingPreview() {
+    const trackRpm = Number($('#remoteMapping').value);
+    const armorRpm = Number($('#remoteArmorMapping').value);
+    const halfTravel = (500 - 150) / (1000 - 150);
+    $('#mappingValue').textContent = `${trackRpm} rpm`;
+    $('#armorMappingValue').textContent = `${armorRpm} rpm`;
+    $('#mappingPreview').textContent =
+      `平移摇杆 50% → ${Math.round(trackRpm * halfTravel)} rpm`;
+    $('#armorMappingPreview').textContent =
+      `旋转摇杆 50% → ${Math.round(armorRpm * halfTravel * halfTravel)} rpm`;
+  }
+
+  function updateMappingControls() {
+    const safe = mappingConfigurationSafe();
+    if (!safe && mappingUnlocked) {
+      mappingUnlocked = false;
+      if (mappingUnlockTimer) clearTimeout(mappingUnlockTimer);
+      mappingUnlockTimer = null;
+    }
+    $('#remoteMapping').disabled = !mappingUnlocked;
+    $('#remoteArmorMapping').disabled = !mappingUnlocked;
+    $('#applyMapping').disabled = !mappingUnlocked;
+    $('#unlockMapping').disabled = !safe || mappingUnlocked;
+    $('#mappingLockState').textContent = mappingUnlocked ? '已解锁　▴' :
+      ($('#mappingBody').hidden ? '已锁定　▾' : '已锁定　▴');
+    $('#mappingNote').textContent = mappingPending ? '正在等待下位机确认…' :
+      mappingUnlocked ? '设置将在15秒后自动锁定；松开摇杆后再应用' :
+      mappingStatusMessage || (!connected ? '连接下位机后可解锁' :
+      !remoteMappingSupported ? '当前下位机未上报双轴映射值，请更新固件' :
+      safe ? '电机已接近停止，可以解锁设置' :
+      '需在停止/遥控模式、摇杆归中且两个电机接近停止');
+  }
+
+  function lockMappingSettings(collapse = false) {
+    mappingUnlocked = false;
+    if (mappingUnlockTimer) clearTimeout(mappingUnlockTimer);
+    mappingUnlockTimer = null;
+    if (collapse) $('#mappingBody').hidden = true;
+    $('#mappingToggle').setAttribute('aria-expanded', String(!$('#mappingBody').hidden));
+    updateMappingControls();
+  }
+
+  function updateEmergencyButton() {
+    const button = $('#stop');
+    button.textContent = emergencyActive ? '解除急停' : '■　立即急停';
+    button.classList.toggle('clear', emergencyActive);
+    document.querySelectorAll('.mode-btn').forEach((item) => {
+      item.disabled = emergencyActive;
+      if (emergencyActive) item.classList.remove('active');
+    });
+    updateSpeedControls();
+    if (emergencyActive) lockMappingSettings(true);
+    else updateMappingControls();
+    if (emergencyActive) {
+      currentMode = 0;
+      joy.classList.add('disabled');
+    }
+  }
+
+  async function loadPorts() {
+    ports.innerHTML = '<option value="">选择蓝牙串口</option>';
+    try {
+      const list = await window.targetSerial.list();
+      for (const item of list) {
+        const option = document.createElement('option');
+        option.value = item.path;
+        option.textContent = `${item.name} (${item.path})`;
+        ports.appendChild(option);
+      }
+      hint.textContent = `发现 ${list.length} 个串口`;
+    } catch (error) { hint.textContent = `扫描失败：${error.message}`; }
+  }
+
+  $('#refresh').onclick = loadPorts;
+  connectBtn.onclick = async () => {
+    try {
+      if (connected) {
+        await window.targetSerial.disconnect();
+      } else {
+        if (!ports.value) return void (hint.textContent = '请先选择串口');
+        connectBtn.disabled = true;
+        hint.textContent = '正在连接...';
+        await window.targetSerial.connect(ports.value);
+      }
+    } catch (error) {
+      hint.textContent = `连接失败：${error.message}`;
+      addLog(`ERROR ${error.message}`);
+    } finally { connectBtn.disabled = false; }
+  };
+
+  function setConnected(value, message = '') {
+    connected = value;
+    motorFeedbackReady = false;
+    remoteMappingSupported = false;
+    mappingStatusMessage = '';
+    mappingPending = false;
+    if (mappingAckTimer) clearTimeout(mappingAckTimer);
+    mappingAckTimer = null;
+    lastDeviceFrameAt = value ? Date.now() : 0;
+    lastStatusFrameAt = 0;
+    setBluetoothComm(value ? '等待下位机' : '未连接', value ? '#d18b00' : '#8998aa');
+    if (!value) {
+      centerJoystick(false);
+      lockSpeedSettings(true);
+      lockMappingSettings(true);
+      $('#trackCurrent').textContent = '--';
+      $('#armorCurrent').textContent = '--';
+    }
+    online.textContent = value ? '设备在线' : '设备离线';
+    online.classList.toggle('connected', value);
+    connectBtn.textContent = value ? '断开' : '连接';
+    connectBtn.classList.toggle('disconnect', value);
+    ports.disabled = value;
+    $('#refresh').disabled = value;
+    joy.classList.toggle('disabled', !value || currentMode !== 1);
+    updateSpeedControls();
+    updateMappingControls();
+    hint.textContent = message || (value ? '通信已连接' : '通信已断开');
+  }
+
+  window.targetSerial.onConnection((state) => {
+    setConnected(state.connected, state.message);
+    addLog(state.message || (state.connected ? 'CONNECTED' : 'DISCONNECTED'));
+  });
+
+  window.targetSerial.onDeviceFrame((frame) => {
+    lastDeviceFrameAt = Date.now();
+    setBluetoothComm('通信成功', '#14a573');
+    if (frame.ack && frame.ack.status !== 0) addLog(`ACK ERROR cmd=0x${frame.ack.command.toString(16)} status=${frame.ack.status}`);
+    if (frame.ack && frame.ack.command === 0x15 && mappingPending) {
+      mappingPending = false;
+      if (mappingAckTimer) clearTimeout(mappingAckTimer);
+      mappingAckTimer = null;
+      mappingStatusMessage = frame.ack.status === 0 ? '下位机已确认映射设置' :
+        `下位机拒绝映射设置（错误码 ${frame.ack.status}）`;
+      hint.textContent = mappingStatusMessage;
+      updateMappingControls();
+    }
+    if (!frame.status) return;
+    const s = frame.status;
+    lastStatusFrameAt = Date.now();
+    deviceMode = s.mode;
+    if (s.motors) {
+      lastTrackActualRpm = s.motors.trackSpeedRpm;
+      lastArmorActualRpm = s.motors.armorSpeedRpm;
+      motorFeedbackReady = s.motors.trackOnline && s.motors.armorOnline;
+    }
+    if (s.emergencyStop && !emergencyActive) {
+      currentMode = 0;
+      centerJoystick(false);
+      document.querySelectorAll('.mode-btn').forEach((item) => item.classList.remove('active'));
+      joy.classList.add('disabled');
+    }
+    emergencyActive = s.emergencyStop;
+    updateEmergencyButton();
+    const autoMoveActive = s.mode === 3 || s.mode === 4;
+    const rangingReady = s.ranging && s.ranging.initialized && s.ranging.leftAlive && s.ranging.rightAlive;
+    $('#safetyState').textContent = s.emergencyStop ? '已急停' :
+      (autoMoveActive && !rangingReady ? '霍尔端点未就绪' : '正常');
+    if (s.motors) {
+      $('#trackTarget').textContent = `${s.motors.trackTargetRpm} rpm`;
+      $('#trackActual').textContent = `${s.motors.trackSpeedRpm} rpm`;
+      $('#trackEcd').textContent = s.motors.trackEcd;
+      $('#trackCurrent').textContent = s.motors.trackOnline &&
+        s.motors.trackFeedbackCurrent !== null ? s.motors.trackFeedbackCurrent : '--';
+      $('#armorTarget').textContent = `${s.motors.armorTargetRpm} rpm`;
+      $('#armorActual').textContent = `${s.motors.armorSpeedRpm} rpm`;
+      $('#armorCurrent').textContent = s.motors.armorOnline &&
+        s.motors.armorFeedbackCurrent !== null ? s.motors.armorFeedbackCurrent : '--';
+      $('#armorEcd').textContent = s.motors.armorEcd;
+    }
+    if (s.ranging) {
+      $('#leftDistance').textContent = s.ranging.leftValid ? '检测到磁铁' : '未检测';
+      $('#rightDistance').textContent = s.ranging.rightValid ? '检测到磁铁' : '未检测';
+      $('#leftEndpoint').textContent = s.ranging.leftEndpoint ? '已触发' : '未触发';
+      $('#rightEndpoint').textContent = s.ranging.rightEndpoint ? '已触发' : '未触发';
+      $('#autoDirection').textContent = s.ranging.autoDirection > 0 ? '向右' : '向左';
+    }
+    if (s.autoSpeeds) {
+      const trackInput = $('#autoTrackRpm');
+      const armorInput = $('#autoArmorRpm');
+      if (document.activeElement !== trackInput) trackInput.value = s.autoSpeeds.trackRpm;
+      if (document.activeElement !== armorInput) armorInput.value = s.autoSpeeds.armorRpm;
+    }
+    if (Number.isInteger(s.remoteTrackFullScaleRpm) &&
+        Number.isInteger(s.remoteArmorFullScaleRpm)) {
+      remoteMappingSupported = true;
+      if (!mappingUnlocked && !mappingPending) {
+        $('#remoteMapping').value = s.remoteTrackFullScaleRpm;
+        $('#remoteArmorMapping').value = s.remoteArmorFullScaleRpm;
+        updateMappingPreview();
+      }
+    }
+    updateSpeedControls();
+    updateMappingControls();
+    if (connected) {
+      const modeName = MODE_NAMES[s.mode] || '未知模式';
+      const modeHint = MODE_HINTS[s.mode] || '';
+      hint.textContent = `STM32已解析：${modeName}${modeHint ? ` · ${modeHint}` : ''}`;
+    }
+  });
+
+  setInterval(() => {
+    if (connected && lastDeviceFrameAt && (Date.now() - lastDeviceFrameAt > 1000)) {
+      setBluetoothComm('通信失败', '#f04452');
+    }
+    if (connected && lastStatusFrameAt && (Date.now() - lastStatusFrameAt > 1000)) {
+      $('#trackCurrent').textContent = '--';
+      $('#armorCurrent').textContent = '--';
+      updateSpeedControls();
+      updateMappingControls();
+    }
+  }, 300);
+
+  function sendRemote(move, rotate, immediate = false) {
+    if (!connected || currentMode !== 1) return;
+    pendingRemote = [move, rotate];
+    if (immediate) {
+      const value = pendingRemote; pendingRemote = null;
+      window.targetSerial.setRemote(value[0], value[1]).catch((e) => addLog(e.message));
+      return;
+    }
+    if (!remoteTimer) remoteTimer = setTimeout(() => {
+      remoteTimer = null;
+      if (pendingRemote) {
+        const value = pendingRemote; pendingRemote = null;
+        window.targetSerial.setRemote(value[0], value[1]).catch((e) => addLog(e.message));
+      }
+    }, 50);
+  }
+
+  function applyJoystick(x, y) {
+    let nx = x / MAX, ny = y / MAX;
+    nx = Math.abs(nx) < DEAD ? 0 : nx;
+    ny = Math.abs(ny) < DEAD ? 0 : ny;
+    const move = Math.round(nx * 1000), rotate = Math.round(ny * 1000);
+    currentMove = move;
+    currentRotate = rotate;
+    moveText.textContent = `${move} / 1000`;
+    rotateText.textContent = `${rotate} / 1000`;
+    vehicle.style.transform = `translateX(${nx * 40}px) rotate(${ny * 12}deg)`;
+    sendRemote(move, rotate);
+  }
+
+  function updateJoystick(event) {
+    const rect = joy.getBoundingClientRect();
+    let x = event.clientX - rect.left - rect.width / 2;
+    let y = event.clientY - rect.top - rect.height / 2;
+    const distance = Math.hypot(x, y);
+    if (distance > MAX) { x = x / distance * MAX; y = y / distance * MAX; }
+    knob.style.transform = `translate(${x}px,${y}px)`;
+    applyJoystick(x, y);
+  }
+
+  function centerJoystick(sendStop = true) {
+    dragging = false;
+    currentMove = 0;
+    currentRotate = 0;
+    knob.style.transition = 'transform .18s'; knob.style.transform = '';
+    setTimeout(() => knob.style.transition = '', 190);
+    vehicle.style.transform = '';
+    moveText.textContent = '0 / 1000'; rotateText.textContent = '0 / 1000';
+    if (sendStop) sendRemote(0, 0, true);
+  }
+
+  joy.onpointerdown = (event) => {
+    if (!connected || currentMode !== 1) return;
+    lockMappingSettings();
+    dragging = true; joy.setPointerCapture(event.pointerId); updateJoystick(event);
+  };
+  joy.onpointermove = (event) => { if (dragging) updateJoystick(event); };
+  joy.onpointerup = () => centerJoystick(true);
+  joy.onpointercancel = () => centerJoystick(true);
+
+  /* Keep any non-zero joystick command alive even when the pointer is stationary.
+     If this renderer stalls, transmissions stop and the STM32 timeout stops the motor. */
+  setInterval(() => {
+    if (connected && currentMode === 1 &&
+        (currentMove !== 0 || currentRotate !== 0)) {
+      sendRemote(currentMove, currentRotate, true);
+    }
+  }, 80);
+
+  document.querySelectorAll('.mode-btn').forEach((button) => button.onclick = async () => {
+    if (!connected) return void (hint.textContent = '请先连接设备');
+    if (emergencyActive) return void (hint.textContent = '请先解除急停，再选择工作模式');
+    currentMode = Number(button.dataset.mode);
+    deviceMode = currentMode;
+    lockSpeedSettings(true);
+    lockMappingSettings(true);
+    mappingStatusMessage = '';
+    centerJoystick(currentMode === 1);
+    document.querySelectorAll('.mode-btn').forEach((item) => item.classList.remove('active'));
+    button.classList.add('active');
+    joy.classList.toggle('disabled', currentMode !== 1);
+    try {
+      await window.targetSerial.setMode(currentMode);
+      hint.textContent = `已发送模式：${MODE_NAMES[currentMode]} · ${MODE_HINTS[currentMode]}`;
+    } catch (error) { addLog(error.message); }
+  });
+
+  $('#speedToggle').onclick = () => {
+    $('#speedBody').hidden = !$('#speedBody').hidden;
+  };
+
+  $('#mappingToggle').onclick = () => {
+    $('#mappingBody').hidden = !$('#mappingBody').hidden;
+    $('#mappingToggle').setAttribute('aria-expanded', String(!$('#mappingBody').hidden));
+    updateMappingControls();
+  };
+
+  $('#remoteMapping').oninput = updateMappingPreview;
+  $('#remoteArmorMapping').oninput = updateMappingPreview;
+  $('#unlockMapping').onclick = () => {
+    if (!mappingConfigurationSafe()) return void (hint.textContent =
+      '请确认固件支持映射设置，并等待摇杆归中、两个电机接近停止');
+    mappingStatusMessage = '';
+    mappingUnlocked = true;
+    if (mappingUnlockTimer) clearTimeout(mappingUnlockTimer);
+    mappingUnlockTimer = setTimeout(lockMappingSettings, 15000);
+    updateMappingControls();
+    hint.textContent = '遥控双轴映射已解锁，请在15秒内设置';
+  };
+
+  $('#applyMapping').onclick = async () => {
+    if (!mappingUnlocked || !mappingConfigurationSafe()) {
+      lockMappingSettings();
+      return void (hint.textContent = '当前状态不安全，映射设置已锁定');
+    }
+    const trackRpm = Number($('#remoteMapping').value);
+    const armorRpm = Number($('#remoteArmorMapping').value);
+    if (!Number.isInteger(trackRpm) || trackRpm < 200 || trackRpm > 2000) {
+      return void (hint.textContent = '遥控平移映射值必须是200～2000 rpm的整数');
+    }
+    if (!Number.isInteger(armorRpm) || armorRpm < 20 || armorRpm > 400) {
+      return void (hint.textContent = '遥控旋转映射值必须是20～400 rpm的整数');
+    }
+    mappingPending = true;
+    mappingStatusMessage = '';
+    lockMappingSettings(true);
+    mappingAckTimer = setTimeout(() => {
+      mappingPending = false;
+      mappingAckTimer = null;
+      mappingStatusMessage = '未收到下位机确认，请检查连接和固件版本';
+      hint.textContent = mappingStatusMessage;
+      updateMappingControls();
+    }, 2000);
+    try {
+      await window.targetSerial.setRemoteMapping(trackRpm, armorRpm);
+      if (mappingPending) hint.textContent =
+        `平移 ${trackRpm} rpm、旋转 ${armorRpm} rpm 已发送，等待下位机确认`;
+    } catch (error) {
+      mappingPending = false;
+      if (mappingAckTimer) clearTimeout(mappingAckTimer);
+      mappingAckTimer = null;
+      mappingStatusMessage = `发送失败：${error.message}`;
+      hint.textContent = mappingStatusMessage;
+      addLog(error.message);
+      updateMappingControls();
+    }
+  };
+
+  $('#unlockAutoSpeed').onclick = () => {
+    if (!speedConfigurationSafe()) return void (hint.textContent = '请等待两个电机接近停止后再解锁');
+    speedUnlocked = true;
+    if (speedUnlockTimer) clearTimeout(speedUnlockTimer);
+    speedUnlockTimer = setTimeout(() => lockSpeedSettings(false), 15000);
+    updateSpeedControls();
+    hint.textContent = '速度设置已解锁，请在15秒内完成设置';
+  };
+
+  $('#applyAutoSpeed').onclick = async () => {
+    if (!connected) return void (hint.textContent = '请先连接设备');
+    if (emergencyActive) return void (hint.textContent = '请先解除急停，再设置自动速度');
+    if (!speedUnlocked) return void (hint.textContent = '请先解锁速度设置');
+    if (!speedConfigurationSafe()) {
+      lockSpeedSettings(false);
+      return void (hint.textContent = '电机未接近停止，设置已重新锁定');
+    }
+    const trackRpm = Number($('#autoTrackRpm').value);
+    const armorRpm = Number($('#autoArmorRpm').value);
+    if (!Number.isInteger(trackRpm) || trackRpm < 200 || trackRpm > 2000) {
+      return void (hint.textContent = 'M3508自动速度必须是200～2000 rpm的整数');
+    }
+    if (!Number.isInteger(armorRpm) || armorRpm < 50 || armorRpm > 400) {
+      return void (hint.textContent = 'GM6020自动速度必须是50～400 rpm的整数');
+    }
+    const button = $('#applyAutoSpeed');
+    button.disabled = true;
+    try {
+      await window.targetSerial.setAutoSpeed(trackRpm, armorRpm);
+      hint.textContent = `自动速度已发送：平移 ${trackRpm} rpm，旋转 ${armorRpm} rpm`;
+    } catch (error) { addLog(error.message); hint.textContent = error.message; }
+    finally { lockSpeedSettings(true); }
+  };
+
+  $('#stop').onclick = async () => {
+    const button = $('#stop');
+    button.disabled = true;
+    try {
+      if (emergencyActive) {
+        await window.targetSerial.clearEmergencyStop();
+        hint.textContent = '急停已解除，请重新选择工作模式';
+      } else {
+        centerJoystick(false);
+        await window.targetSerial.emergencyStop();
+        emergencyActive = true;
+        updateEmergencyButton();
+        hint.textContent = '急停指令已发送';
+      }
+    } catch (error) { addLog(error.message); }
+    finally { button.disabled = false; }
+  };
+
+  window.addEventListener('beforeunload', () => { if (connected) window.targetSerial.disconnect(); });
+  const motorStatusToggle = document.querySelector('.motor-status > b');
+  const motorStatusGrid = document.querySelector('.motor-status > .status-grid');
+  motorStatusToggle.classList.add('status-toggle');
+  motorStatusToggle.tabIndex = 0;
+  motorStatusToggle.setAttribute('role', 'button');
+  motorStatusToggle.setAttribute('aria-expanded', 'false');
+  motorStatusToggle.innerHTML = '<span>霍尔端点与电机实时状态</span><span class="status-toggle-state">展开　▾</span>';
+  const toggleMotorStatus = () => {
+    const expanded = motorStatusGrid.classList.toggle('expanded');
+    motorStatusToggle.setAttribute('aria-expanded', String(expanded));
+    motorStatusToggle.querySelector('.status-toggle-state').textContent = expanded ? '收起　▴' : '展开　▾';
+  };
+  motorStatusToggle.onclick = toggleMotorStatus;
+  motorStatusToggle.onkeydown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleMotorStatus();
+    }
+  };
+  updateSpeedControls();
+  updateMappingPreview();
+  updateMappingControls();
+  loadPorts();
+</script>
+</body>
+</html>

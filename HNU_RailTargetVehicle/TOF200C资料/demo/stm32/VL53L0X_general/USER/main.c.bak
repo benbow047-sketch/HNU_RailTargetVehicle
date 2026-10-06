@@ -1,0 +1,63 @@
+
+#include "stm32f10x.h" //stm32头文件
+#include "usart.h"
+#include "sys.h"
+#include "delay.h"
+#include "led.h"
+#include "vl53l0x.h"
+#include "vl53l0x_gen.h"
+
+/******************************************************************************/
+extern VL53L0X_Dev_t vl53l0x_dev;//设备I2C数据参数
+/******************************************************************************/
+int main(void)
+{
+	static char buf[VL53L0X_MAX_STRING_LENGTH];//测试模式字符串字符缓冲区
+	VL53L0X_Error Status=VL53L0X_ERROR_NONE;//工作状态
+	u8 mode=0;
+	u32 i;
+	
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);//分组2
+	uart_init(115200);  //串口1
+	delay_init();
+	LED_Init();
+	delay_ms(200);
+	
+	if(vl53l0x_init(&vl53l0x_dev))     //vl53l0x初始化
+	 {
+		printf("VL53L0X_Init Error!!!\r\n");
+		delay_ms(200);
+	 }
+	 else
+		 printf("VL53L0X_Init OK\r\n");
+	
+	if(vl53l0x_set_mode(&vl53l0x_dev,mode))   //配置测量模式
+		{
+			printf("Mode Set Error!!!\r\n");
+		}
+	else
+		printf("Mode Set OK!!!\r\n");
+	
+	
+	while(1)
+		{
+			Status = vl53l0x_start_single_test(&vl53l0x_dev,&vl53l0x_data,buf);//执行一次测量
+			if(Status==VL53L0X_ERROR_NONE)
+				printf("d: %4imm\r\n",Distance_data);//打印测量距离
+			else
+				printf("Measurement is Error!!!\r\n");
+			
+		 //delay_ms(100);
+		 i++;
+		 if(i>=0x1fffff)
+		 	{
+		 		i=0;
+		 		LED0=!LED0;
+		 	}
+	 }
+}
+/***************************************************************************/
+/***************************************************************************/
+
+
+

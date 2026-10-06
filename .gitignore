@@ -1,0 +1,7 @@
+node_modules/
+.idea/
+cmake-build-*/
+build/
+*.elf
+*.bin
+*.exe

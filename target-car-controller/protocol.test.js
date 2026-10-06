@@ -1,0 +1,104 @@
+const assert = require('assert');
+const { CMD, FrameDecoder, encodeFrame, decodeStatus } = require('./protocol');
+
+const payload = Buffer.alloc(4);
+payload.writeInt16LE(500, 0);
+payload.writeInt16LE(-250, 2);
+const frame = encodeFrame(CMD.SET_REMOTE, 7, payload);
+
+const decoder = new FrameDecoder();
+assert.deepStrictEqual(decoder.push(frame.subarray(0, 3)), []);
+const decoded = decoder.push(frame.subarray(3));
+assert.strictEqual(decoded.length, 1);
+assert.strictEqual(decoded[0].command, CMD.SET_REMOTE);
+assert.strictEqual(decoded[0].sequence, 7);
+assert.strictEqual(decoded[0].payload.readInt16LE(0), 500);
+assert.strictEqual(decoded[0].payload.readInt16LE(2), -250);
+
+const damaged = Buffer.from(frame);
+damaged[6] ^= 0x01;
+assert.deepStrictEqual(decoder.push(damaged), []);
+assert.strictEqual(decoder.crcErrors, 1);
+
+const statusPayload = Buffer.alloc(35);
+statusPayload[3] = 0x03;
+statusPayload[22] = 1;
+statusPayload.writeInt16LE(0, 4);
+statusPayload.writeInt16LE(123, 6);
+statusPayload.writeInt16LE(0, 8);
+statusPayload.writeInt16LE(30, 10);
+statusPayload.writeInt16LE(-25, 12);
+statusPayload.writeInt16LE(1500, 14);
+statusPayload.writeUInt16LE(1000, 16);
+statusPayload.writeUInt16LE(2000, 18);
+statusPayload[20] = 35;
+statusPayload[21] = 40;
+statusPayload[23] = 0x7F;
+statusPayload.writeUInt16LE(210, 24);
+statusPayload.writeUInt16LE(480, 26);
+statusPayload.writeInt8(-1, 28);
+statusPayload.writeUInt16LE(1500, 29);
+statusPayload.writeUInt16LE(200, 31);
+statusPayload[33] = 0;
+statusPayload[34] = 2;
+const status = decodeStatus(statusPayload);
+assert.strictEqual(status.motors.driverReady, true);
+assert.strictEqual(status.motors.trackOnline, true);
+assert.strictEqual(status.motors.armorOnline, true);
+assert.strictEqual(status.motors.trackTargetRpm, 0);
+assert.strictEqual(status.motors.trackSpeedRpm, 123);
+assert.strictEqual(status.motors.trackFeedbackCurrent, null);
+assert.strictEqual(status.motors.armorTargetRpm, 30);
+assert.strictEqual(status.motors.armorSpeedRpm, -25);
+assert.strictEqual(status.motors.armorFeedbackCurrent, null);
+assert.strictEqual(status.motors.trackEcd, 1000);
+assert.strictEqual(status.motors.armorEcd, 2000);
+assert.strictEqual(status.ranging.initialized, true);
+assert.strictEqual(status.ranging.leftValid, true);
+assert.strictEqual(status.ranging.rightValid, true);
+assert.strictEqual(status.ranging.leftAlive, true);
+assert.strictEqual(status.ranging.rightAlive, true);
+assert.strictEqual(status.ranging.leftEndpoint, true);
+assert.strictEqual(status.ranging.rightEndpoint, true);
+assert.strictEqual(status.ranging.leftMm, 210);
+assert.strictEqual(status.ranging.rightMm, 480);
+assert.strictEqual(status.ranging.autoDirection, -1);
+assert.strictEqual(status.ranging.leftRangeStatus, 0);
+assert.strictEqual(status.ranging.rightRangeStatus, 2);
+assert.strictEqual(status.autoSpeeds.trackRpm, 1500);
+assert.strictEqual(status.autoSpeeds.armorRpm, 200);
+assert.strictEqual(status.remoteTrackFullScaleRpm, undefined);
+
+const feedbackStatusPayload = Buffer.from(statusPayload);
+feedbackStatusPayload[20] = 0x43;
+feedbackStatusPayload[21] = 0x49;
+feedbackStatusPayload.writeInt16LE(-320, 8);
+feedbackStatusPayload.writeInt16LE(810, 14);
+const feedbackStatus = decodeStatus(feedbackStatusPayload);
+assert.strictEqual(feedbackStatus.motors.trackFeedbackCurrent, -320);
+assert.strictEqual(feedbackStatus.motors.armorFeedbackCurrent, 810);
+
+const extendedStatusPayload = Buffer.concat([statusPayload, Buffer.alloc(4)]);
+extendedStatusPayload.writeUInt16LE(1800, 35);
+extendedStatusPayload.writeUInt16LE(120, 37);
+assert.strictEqual(decodeStatus(extendedStatusPayload).remoteTrackFullScaleRpm, 1800);
+assert.strictEqual(decodeStatus(extendedStatusPayload).remoteArmorFullScaleRpm, 120);
+
+const autoSpeedPayload = Buffer.alloc(4);
+autoSpeedPayload.writeUInt16LE(1200, 0);
+autoSpeedPayload.writeUInt16LE(180, 2);
+const autoSpeedFrame = encodeFrame(CMD.SET_AUTO_SPEED, 8, autoSpeedPayload);
+const autoSpeedDecoded = new FrameDecoder().push(autoSpeedFrame);
+assert.strictEqual(autoSpeedDecoded[0].command, CMD.SET_AUTO_SPEED);
+assert.strictEqual(autoSpeedDecoded[0].payload.readUInt16LE(0), 1200);
+assert.strictEqual(autoSpeedDecoded[0].payload.readUInt16LE(2), 180);
+
+const mappingPayload = Buffer.alloc(4);
+mappingPayload.writeUInt16LE(1800, 0);
+mappingPayload.writeUInt16LE(120, 2);
+const mappingDecoded = new FrameDecoder().push(encodeFrame(CMD.SET_REMOTE_MAPPING, 9, mappingPayload));
+assert.strictEqual(mappingDecoded[0].command, 0x15);
+assert.strictEqual(mappingDecoded[0].payload.readUInt16LE(0), 1800);
+assert.strictEqual(mappingDecoded[0].payload.readUInt16LE(2), 120);
+
+console.log('Protocol encode/decode/CRC tests passed.');
