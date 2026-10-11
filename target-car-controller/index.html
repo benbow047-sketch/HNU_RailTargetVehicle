@@ -25,13 +25,13 @@
   <div class="read"><div class="data"><small>发送平移变量</small><b id="move">0 / 1000</b></div><div class="data"><small>发送旋转变量</small><b id="rotate">0 / 1000</b></div></div>
   <div class="actions"><button class="stop" id="stop">■　立即急停</button></div>
   <section class="mode"><b>工作模式</b><div class="modes"><button class="mode-btn active" data-mode="1">遥控模式</button><button class="mode-btn" data-mode="2">自动旋转靶</button><button class="mode-btn" data-mode="3">自动平移靶</button><button class="mode-btn" data-mode="4">自动旋转平移靶</button></div></section>
-  <section class="speed-settings"><button class="speed-toggle" id="speedToggle"><span>自动模式速度</span><span id="speedLockState">已锁定　▾</span></button><div class="speed-body" id="speedBody" hidden><div class="speed-grid"><label class="speed-field">平移 M3508（200～2000 rpm）<input id="autoTrackRpm" type="number" min="200" max="2000" step="50" value="1500" disabled></label><label class="speed-field">旋转 GM6020（50～400 rpm）<input id="autoArmorRpm" type="number" min="50" max="400" step="10" value="200" disabled></label></div><div class="speed-actions"><button class="unlock-speed" id="unlockAutoSpeed">解锁设置</button><button class="apply-speed" id="applyAutoSpeed" disabled>应用并锁定</button></div><p class="speed-note" id="speedNote">仅停止/遥控模式且两个电机接近停止时可解锁</p></div></section>
+  <section class="speed-settings"><button class="speed-toggle" id="speedToggle"><span>自动模式速度</span><span id="speedLockState">已锁定　▾</span></button><div class="speed-body" id="speedBody" hidden><div class="speed-grid"><label class="speed-field">平移 M3508（1500～5500 rpm）<input id="autoTrackRpm" type="number" min="1500" max="5500" step="50" value="1500" disabled></label><label class="speed-field">旋转 GM6020（50～400 rpm）<input id="autoArmorRpm" type="number" min="50" max="400" step="10" value="200" disabled></label></div><div class="speed-actions"><button class="unlock-speed" id="unlockAutoSpeed">解锁设置</button><button class="apply-speed" id="applyAutoSpeed" disabled>应用并锁定</button></div><p class="speed-note" id="speedNote">仅停止/遥控模式且两个电机接近停止时可解锁</p></div></section>
   <section class="speed-settings">
     <button class="speed-toggle" id="mappingToggle" aria-expanded="false" aria-controls="mappingBody"><span>遥控摇杆映射</span><span id="mappingLockState">已锁定　▾</span></button>
     <div class="speed-body" id="mappingBody" hidden>
       <div class="mapping-head"><b>左右平移 M3508（满幅）</b><span id="mappingValue">1500 rpm</span></div>
-      <input class="mapping-range" id="remoteMapping" type="range" min="200" max="2000" step="50" value="1500" aria-label="左右平移映射值" disabled>
-      <div class="mapping-scale"><span>200 rpm</span><span>2000 rpm</span></div>
+      <input class="mapping-range" id="remoteMapping" type="range" min="1500" max="5500" step="50" value="1500" aria-label="左右平移映射值" disabled>
+      <div class="mapping-scale"><span>1500 rpm</span><span>5500 rpm</span></div>
       <p class="mapping-preview" id="mappingPreview">平移摇杆 50% → 618 rpm</p>
       <div class="mapping-head"><b>上下旋转 GM6020（满幅）</b><span id="armorMappingValue">200 rpm</span></div>
       <input class="mapping-range" id="remoteArmorMapping" type="range" min="20" max="400" step="10" value="200" aria-label="上下旋转映射值" disabled>
@@ -449,8 +449,8 @@
     }
     const trackRpm = Number($('#remoteMapping').value);
     const armorRpm = Number($('#remoteArmorMapping').value);
-    if (!Number.isInteger(trackRpm) || trackRpm < 200 || trackRpm > 2000) {
-      return void (hint.textContent = '遥控平移映射值必须是200～2000 rpm的整数');
+    if (!Number.isInteger(trackRpm) || trackRpm < 1500 || trackRpm > 5500) {
+      return void (hint.textContent = '遥控平移映射值必须是1500～5500 rpm的整数');
     }
     if (!Number.isInteger(armorRpm) || armorRpm < 20 || armorRpm > 400) {
       return void (hint.textContent = '遥控旋转映射值必须是20～400 rpm的整数');
@@ -499,8 +499,8 @@
     }
     const trackRpm = Number($('#autoTrackRpm').value);
     const armorRpm = Number($('#autoArmorRpm').value);
-    if (!Number.isInteger(trackRpm) || trackRpm < 200 || trackRpm > 2000) {
-      return void (hint.textContent = 'M3508自动速度必须是200～2000 rpm的整数');
+    if (!Number.isInteger(trackRpm) || trackRpm < 1500 || trackRpm > 5500) {
+      return void (hint.textContent = 'M3508自动速度必须是1500～5500 rpm的整数');
     }
     if (!Number.isInteger(armorRpm) || armorRpm < 50 || armorRpm > 400) {
       return void (hint.textContent = 'GM6020自动速度必须是50～400 rpm的整数');

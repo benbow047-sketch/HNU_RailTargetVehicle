@@ -164,7 +164,7 @@ async function sendRemote(move, rotate) {
 async function sendAutoSpeed(trackRpm, armorRpm) {
   const track = Math.round(Number(trackRpm));
   const armor = Math.round(Number(armorRpm));
-  if (!Number.isFinite(track) || track < 200 || track > 2000 ||
+  if (!Number.isFinite(track) || track < 1500 || track > 5500 ||
       !Number.isFinite(armor) || armor < 50 || armor > 400) {
     throw new Error('自动速度超出安全范围');
   }
@@ -177,7 +177,7 @@ async function sendAutoSpeed(trackRpm, armorRpm) {
 async function sendRemoteMapping(trackRpm, armorRpm) {
   const track = Number(trackRpm);
   const armor = Number(armorRpm);
-  if (!Number.isInteger(track) || track < 200 || track > 2000 ||
+  if (!Number.isInteger(track) || track < 1500 || track > 5500 ||
       !Number.isInteger(armor) || armor < 20 || armor > 400) {
     throw new Error('遥控映射值超出安全范围');
   }

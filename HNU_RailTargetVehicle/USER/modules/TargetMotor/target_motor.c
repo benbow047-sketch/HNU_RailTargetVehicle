@@ -17,9 +17,6 @@
 #define TRACK_BRAKE_STOP_RPM             30.0f
 #define ARMOR_COMMAND_DEADZONE          150
 #define ARMOR_RAMP_RPM_PER_SEC          200.0f
-#define ARMOR_HOLD_KP_RPM_PER_DEG         1.5f
-#define ARMOR_HOLD_MAX_RPM               60.0f
-#define ARMOR_HOLD_DEADBAND_DEG           0.25f
 
 /* If the physical direction is opposite, change this value to 0. */
 #define TRACK_POSITIVE_DIRECTION_IS_RIGHT 1
@@ -47,7 +44,7 @@ static pid_config_t track_pid_config =
     .Ki = 0.0f,
     .Kd = 0.0f,
     .dt = 1.0f,
-    .MaxOut = 2000.0f,
+    .MaxOut = 6000.0f,
     .DeadBand = 1.0f,
     .IntegralLimit = 0.0f,
     .Improve = PID_IMPROVE_NONE,
@@ -61,6 +58,19 @@ static pid_config_t armor_pid_config =
     .dt = 1.0f,
     .MaxOut = 6000.0f,
     .DeadBand = 0.5f,
+    .IntegralLimit = 0.0f,
+    .Improve = PID_IMPROVE_NONE,
+};
+
+/* Encoder position outer loop. Its output is the reference for armor_pid. */
+static pid_config_t armor_hold_pid_config =
+{
+    .Kp = 1.5f,
+    .Ki = 0.0f,
+    .Kd = 0.0f,
+    .dt = 1.0f,
+    .MaxOut = 60.0f,
+    .DeadBand = 0.25f,
     .IntegralLimit = 0.0f,
     .Improve = PID_IMPROVE_NONE,
 };
@@ -82,6 +92,7 @@ static dji_motor_object_t *track_motor;
 static dji_motor_object_t *armor_motor;
 static pid_obj_t *track_pid;
 static pid_obj_t *armor_pid;
+static pid_obj_t *armor_hold_pid;
 static pid_obj_t *track_brake_pid;
 static float track_ramped_target_rpm;
 static float armor_ramped_target_rpm;
@@ -194,6 +205,7 @@ static void handle_mode_change(uint8_t mode, uint32_t now)
     g_target_motor_test_state.armor_control_output = 0;
     if (track_pid != NULL) pid_clear(track_pid);
     if (armor_pid != NULL) pid_clear(armor_pid);
+    if (armor_hold_pid != NULL) pid_clear(armor_hold_pid);
 }
 
 void TargetMotor_Init(void)
@@ -201,6 +213,7 @@ void TargetMotor_Init(void)
     memset((void *)&g_target_motor_test_state, 0, sizeof(g_target_motor_test_state));
     track_pid = pid_register(&track_pid_config);
     armor_pid = pid_register(&armor_pid_config);
+    armor_hold_pid = pid_register(&armor_hold_pid_config);
     track_brake_pid = pid_register(&track_brake_pid_config);
     track_motor = dji_motor_register(&track_motor_config, track_speed_control);
     armor_motor = dji_motor_register(&armor_motor_config, armor_speed_control);
@@ -216,7 +229,7 @@ void TargetMotor_Init(void)
     g_target_motor_test_state.auto_move_direction = auto_move_direction;
     g_target_motor_test_state.init_ok =
         (uint8_t)((track_pid != NULL) && (track_brake_pid != NULL) &&
-                  (armor_pid != NULL) &&
+                  (armor_pid != NULL) && (armor_hold_pid != NULL) &&
                   (track_motor != NULL) && (armor_motor != NULL));
 }
 
@@ -295,7 +308,8 @@ void TargetMotor_Process(void)
                 (float)(1000 - TRACK_COMMAND_DEADZONE);
             track_requested_rpm = normalized *
                 (float)g_bt_test_state.remote_track_full_scale_rpm;
-            if (command < 0) track_requested_rpm = -track_requested_rpm;
+            /* Joystick X and the installed track motor have opposite signs. */
+            if (command > 0) track_requested_rpm = -track_requested_rpm;
         }
     }
 
@@ -388,26 +402,21 @@ void TargetMotor_Process(void)
     if (!safe_to_rotate || armor_rotation_commanded)
     {
         armor_hold_active = 0U;
+        if (armor_hold_pid != NULL) pid_clear(armor_hold_pid);
     }
-    else if (armor_hold_mode && (armor_motor != NULL))
+    else if (armor_hold_mode && (armor_motor != NULL) &&
+             (armor_hold_pid != NULL))
     {
         if (!armor_hold_active)
         {
             /* Capture the exact multi-turn encoder angle when rotation is released. */
             armor_hold_target_angle = armor_motor->measure.total_angle;
             armor_hold_active = 1U;
+            pid_clear(armor_hold_pid);
         }
-        const float angle_error =
-            armor_hold_target_angle - armor_motor->measure.total_angle;
-        if ((angle_error > ARMOR_HOLD_DEADBAND_DEG) ||
-            (angle_error < -ARMOR_HOLD_DEADBAND_DEG))
-        {
-            armor_requested_rpm = angle_error * ARMOR_HOLD_KP_RPM_PER_DEG;
-            if (armor_requested_rpm > ARMOR_HOLD_MAX_RPM)
-                armor_requested_rpm = ARMOR_HOLD_MAX_RPM;
-            else if (armor_requested_rpm < -ARMOR_HOLD_MAX_RPM)
-                armor_requested_rpm = -ARMOR_HOLD_MAX_RPM;
-        }
+        armor_requested_rpm = pid_calculate(
+            armor_hold_pid, armor_motor->measure.total_angle,
+            armor_hold_target_angle);
     }
 
     float armor_ramp_goal = armor_requested_rpm;
